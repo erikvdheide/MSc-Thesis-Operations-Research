@@ -6,7 +6,7 @@ This repository contains all files used for my master thesis "Carbon Intensity M
 
 The code split into into two parts. The first part considers the single-resource, multi-transport model and the second part the multi-resource, multi-transport model. All modeling is done in the Python language using the Gurobi solver.
 
-## Single-resource, multi-transport model (SRMT Model)
+## Single-resource, multi-transport model (```Model SRMT```)
 The model which considers only one resource (product) is split into 5 separate example setups. This model considers *pools*: all materials that come into an intermediate pool are linearly blended. This model was a build-up towards the multi-resource model, no results were stated in the report. It containts of the following files:
 * ```Model_SRMT.py```. Serves at the **main** for this model. Containts the model which can run all 5 data setups. Also contains options to run the model. 
 * ```Data_SRMT_1.py```. Consists of 3 source nodes, 1 pool and 3 target nodes.
@@ -16,7 +16,7 @@ The model which considers only one resource (product) is split into 5 separate e
 * ```Data_SRMT_5.py```. Consists of 3 sources, 2 pools (in 1 layer), 3 target nodes and CCS investment options defined on the second pool.
 
 
-## Multi-resource, multi-transport model (MRMT Model)
+## Multi-resource, multi-transport model (```Model MRMT```)
 The model which is described extensively in the report. It contains of the following files:
 * ```Main_MRMT.py```. Serves as the **main** of this model. To extensively test this model, it separate main consists of all options how to run the model.
 * ```Model_MRMT.py```. Builds the main model, as well as carbon intensity restrictions and calculations. 
