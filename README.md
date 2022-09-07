@@ -32,5 +32,14 @@ The topology of the MRMT model that is considered in the data:
 ![final_setup](https://user-images.githubusercontent.com/75078739/176399010-dc961d8e-abca-42a3-b799-a092e74f72fa.jpg)
 
 
-## Hydrogen supply chain network case study model
+## Hydrogen supply chain network case study model (```Model HSCN```)
+The case study model for an optimal hydrogen configuration in the Netherlands. It contains the following files:
+* ```Data_HSCN.py```. Contains the complete (hardcoded) dataset used for both the static and dynamic model.
+* ```Model_HSCN_dynamic.py```. The complete dynamic model. Execute this file to run the dynamic model.
+* ```Model_HSCN_static.py```. The complete static model. Execute this file to run the static model.
+* ```Params_HSCN.py```. Consists of the choices that are made in the models, as well as the option to put CI restrictions.
+* ```Plots_HSCN.py```. Code that plots using a starting solution or not (data hardcoded).
+
+The main pathways of the HSCN model are given by:
+![pathwaysH2](https://user-images.githubusercontent.com/75078739/188835006-22dd2b93-1954-41ac-b70c-abe42c34df6c.jpg)
 
