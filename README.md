@@ -4,7 +4,7 @@
 
 This repository contains all files used for my master thesis "Carbon Intensity Modeling in Energy Value Chain Optimization".
 
-The code split into into two parts. The first part considers the single-resource, multi-transport model and the second part the multi-resource, multi-transport model. All modeling is done in the Python language using the Gurobi solver.
+The code is split into 3 parts. The first part considers the single-resource, multi-transport model. The second part the multi-resource, multi-transport model. The third part considers the case study model (both static and dynamic versions). All modeling is done in the Python language using the Gurobi solver.
 
 
 ## Single-resource, multi-transport model (```Model SRMT```)
