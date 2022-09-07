@@ -6,6 +6,7 @@ This repository contains all files used for my master thesis "Carbon Intensity M
 
 The code split into into two parts. The first part considers the single-resource, multi-transport model and the second part the multi-resource, multi-transport model. All modeling is done in the Python language using the Gurobi solver.
 
+
 ## Single-resource, multi-transport model (```Model SRMT```)
 The model which considers only one resource (product) is split into 5 separate example setups. This model considers *pools*: all materials that come into an intermediate pool are linearly blended. This model was a build-up towards the multi-resource model, no results were stated in the report. It containts of the following files:
 * ```Model_SRMT.py```. Serves at the **main** for this model. Containts the model which can run all 5 data setups. Also contains options to run the model. 
@@ -29,3 +30,7 @@ The model which is described extensively in the report. It contains the followin
 
 The topology of the MRMT model that is considered in the data: 
 ![final_setup](https://user-images.githubusercontent.com/75078739/176399010-dc961d8e-abca-42a3-b799-a092e74f72fa.jpg)
+
+
+## Hydrogen supply chain network case study model
+
