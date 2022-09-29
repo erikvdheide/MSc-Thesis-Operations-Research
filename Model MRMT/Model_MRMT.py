@@ -578,6 +578,8 @@ def getTotalEmissions():
 
 def printObjective():
     """ Print the output of the model """
+    print("Num. variables   : ", Model.numVars)  # (including those that are by definition 0)
+    print("Num. constraints : ", Model.numConstrs)  # (including those that make variables 0 and redundant constraints for 0 variables)
     print()
     print(Model.printStats())
     print(f"OBJECTIVE:")
@@ -587,6 +589,8 @@ def printObjective():
     print()
     #print(Model.printStats())  # prints statistics of the model
     #print()
+    # for arc in arcs:
+    #     print("arc:", arc, " - value: ", x_arc[arc].X)
 
 
 def printVariables():

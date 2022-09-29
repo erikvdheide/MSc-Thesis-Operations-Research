@@ -14,8 +14,13 @@ Note: a data entry with -1 means +infinity.
 import gurobipy as gp
 import numpy as np
 import pandas as pd
-
+from math import sqrt
+np.random.seed(0)
 """ Nodes """
+
+# This function potentially
+def e(number):
+    return max(0, np.random.normal(number, sqrt(number)))
 
 # Resources
 resources = ["R1", "R2", "R3", "R4", "R5", "R6"]
@@ -32,7 +37,7 @@ sources_res, cost_source, min_supply_source, max_supply_source, carbon_source = 
     ("S4", "R3"): [5, 20, 1000, 2],
     ("S4", "R4"): [5, 20, 1000, 2],
     # bulk 2
-    ("S5", "R1"): [12, 0, 1000, 20],
+    ("S5", "R1"): [10, 0, 1000, 20],  # [np.random.normal(10, 10**(1/2)), 0, 1000, 20],
     ("S6", "R2"): [12, 5, 1000, 20],
     ("S7", "R3"): [3, 2, 1000, 10],
     ("S7", "R4"): [4, 6, 800, 11],

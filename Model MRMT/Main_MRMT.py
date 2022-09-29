@@ -22,7 +22,6 @@ from matplotlib import pyplot as plt
 ############################## Execute & print results ################################################################
 
 """ Basic execution of the model """
-
 executeModel()
 printObjective()
 printVariables()
@@ -38,7 +37,7 @@ Perform a stricter linear restriction in steps, until no longer achievable
 ===========================================================================
 """
 
-""" 
+"""
 # Run the linear models and save all the results
 objectives = []
 x_axis = []
@@ -50,9 +49,13 @@ CCS_list = []
 mode_list = []
 depot_list = []
 demand_list = []
-rangeUsed = range(20793, 7500, -20)  # 7500
+# rangeUsed = range(20793, 7500, -50)  # 7500
+rangeUsed = range(20793, 15000, -100)
 for i in rangeUsed:
     executeModelRestricted(i)
+    print("!!!!! Restriction value: !!!!!", i)
+    printObjective()
+    printVariables()
     x_axis.append(i)
     objectives.append(getObjective())
     total_emissions.append(getTotalEmissions())
@@ -73,20 +76,16 @@ print("CCS list    :", CCS_list)
 print("Mode list   :", mode_list)
 print("Depot list  :", depot_list)
 print("Demand list :", demand_list)
-"""
 
-"""
 # Print profit objective
 plt.plot(rangeUsed, objectives, 'blue', label='profit')
 plt.xlabel('Total chain emissions maximum')
 plt.ylabel('Objective')
-plt.grid(axis='y', alpha=0.75)
+#plt.grid(axis='y', alpha=0.75)
 plt.gca().invert_xaxis()
 plt.legend()
 plt.show()
-"""
 
-"""
 # Print carbon intensities
 CCS_check = 1
 firstCCS_check = False
@@ -98,17 +97,16 @@ for j in CCS_list:
         else:
             plt.axvline(x=x_axis[CCS_list.index(j)], linewidth=2, color='lightgray')
         CCS_check = CCS_check + 1
-plt.plot(rangeUsed, CI_R5, linestyle='--', color='red', label='Carbon Intensity R5')
-plt.plot(rangeUsed, CI_R6, linestyle='-.', color='green', label='Carbon Intensity R6')
+plt.plot(rangeUsed, CI_R5, linestyle='--', color='red', label='Carbon Intensity Prod 1')
+plt.plot(rangeUsed, CI_R6, linestyle='-.', color='green', label='Carbon Intensity Prod 2')
 plt.xlabel('Total chain emissions maximum')
 plt.ylabel('Carbon intensity')
-plt.grid(axis='y', alpha=0.75)
+#plt.grid(axis='y', alpha=0.75)
 plt.gca().invert_xaxis()
 plt.legend(loc='upper right')
 plt.show()
-"""
 
-"""
+
 # Print when sources, modes, depots, demand and CCS are used
 for source_el in source_list:
     source_list[source_list.index(source_el)] = source_el * 4
@@ -155,7 +153,7 @@ plt.show()
 rangeCI_R5 = range(44, 15, -1)
 for i in rangeCI_R5:
     print("====RESTRICTION R5: ", i, "====")
-    executeModelRestricted_R5_Option2(i)
+    executeModelRestricted_R5_Option1(i)
     printObjective()
     printCIOption2()
 """

@@ -23,7 +23,7 @@ optimizeOption1 = True  # put on True to use the formulation based on CI balance
 optimizeOption2 = False  # put on True to use the formulation based on arc flow variable distribution
 
 # Subgraphs
-useT3_R5 = True  # put on True to define the subgraph emissions of T3, R5
+useT3_R5 = False  # put on True to define the subgraph emissions of T3, R5
 useT4_R6 = False  # put on True to define the subgraph emissions of T4, R6
 optimizeT3_R5 = False  # put on True to find the minimum emissions of T3, R5
 optimizeT4_R6 = False  # put on True to find the minimum emissions of T4, R6
