@@ -16,7 +16,7 @@ Thesis OR&QL - EUR 2022
 # Imports
 import numpy as np
 from math import sin, cos, sqrt, atan2, radians
-from Params_case import *
+from Params_HSCN import *
 import pandas as pd
 
 """ Sets """
@@ -118,30 +118,65 @@ else:
     CO2Prod_pi[(7, 1)] = 27.5
     CO2Prod_pi[(8, 0)] = 24.0
     CO2Prod_pi[(8, 1)] = 26.2
-    if reduceBiomassEm:
-        CO2Prod_pi[(6, 0)] = CO2Prod_pi[(6, 0)] * 0.2
-        CO2Prod_pi[(6, 1)] = CO2Prod_pi[(6, 1)] * 0.2
-        CO2Prod_pi[(7, 0)] = CO2Prod_pi[(7, 0)] * 0.2
-        CO2Prod_pi[(7, 1)] = CO2Prod_pi[(7, 1)] * 0.2
-        CO2Prod_pi[(8, 0)] = CO2Prod_pi[(8, 0)] * 0.2
-        CO2Prod_pi[(8, 1)] = CO2Prod_pi[(8, 1)] * 0.2
+    if newEmissionData:
+        CO2Prod_pi[(6, 0)] = CO2Prod_pi[(6, 0)] * 0.5
+        CO2Prod_pi[(6, 1)] = CO2Prod_pi[(6, 1)] * 0.5
+        CO2Prod_pi[(7, 0)] = CO2Prod_pi[(7, 0)] * 0.5
+        CO2Prod_pi[(7, 1)] = CO2Prod_pi[(7, 1)] * 0.5
+        CO2Prod_pi[(8, 0)] = CO2Prod_pi[(8, 0)] * 0.5
+        CO2Prod_pi[(8, 1)] = CO2Prod_pi[(8, 1)] * 0.5
     # WE
-    CO2Prod_pi[(9, 0)] = 43.9
-    CO2Prod_pi[(9, 1)] = 26.2
-    CO2Prod_pi[(10, 0)] = 41.1
-    CO2Prod_pi[(10, 1)] = 24.5
-    CO2Prod_pi[(11, 0)] = 38.6
-    CO2Prod_pi[(11, 1)] = 23.0
+    if newEmissionData:
+        CO2Prod_pi[(9, 0)] = 0.01
+        CO2Prod_pi[(9, 1)] = 0.02
+        CO2Prod_pi[(10, 0)] = 0.01
+        CO2Prod_pi[(10, 1)] = 0.02
+        CO2Prod_pi[(11, 0)] = 0.01
+        CO2Prod_pi[(11, 1)] = 0.02
+    else:
+        CO2Prod_pi[(9, 0)] = 43.9
+        CO2Prod_pi[(9, 1)] = 26.2
+        CO2Prod_pi[(10, 0)] = 41.1
+        CO2Prod_pi[(10, 1)] = 24.5
+        CO2Prod_pi[(11, 0)] = 38.6
+        CO2Prod_pi[(11, 1)] = 23.0
 if includeCCS:
     # with CCS (capture corrections are done in the model):
-    halfway = int(len(P)/2)
-    for r in range(0, halfway):
+    halfway = int(len(P) / 2)
+    if newEmissionData:
+        SMR_CG_range = [0, 1, 2, 3, 4, 5]
+        BG_range = [6, 7, 8]
+        WE_range = [9, 10, 11]
         for i in I:
-            CO2Prod_pi[(r+halfway, i)] = CO2Prod_pi[(r, i)]
+            for r in SMR_CG_range:
+                CO2Prod_pi[(r+halfway, i)] = (1-CCSEF) * CO2Prod_pi[(r, i)]
+            for r in BG_range:
+                # Net emissions = absolute emissions - part captured by CCS - part replanted
+                CO2Prod_pi[(r + halfway, i)] = (CO2Prod_pi[(r, i)]/0.5) - (CCSEF * (CO2Prod_pi[(r, i)]/0.5)) - (0.5 * (CO2Prod_pi[(r, i)]/0.5))
+            for r in WE_range:
+                CO2Prod_pi[(r + halfway, i)] = CO2Prod_pi[(r, i)] # no CCS possible!
+    else:
+        for r in range(0, halfway):
+            for i in I:
+                CO2Prod_pi[(r+halfway, i)] = CO2Prod_pi[(r, i)]
 
+CO2Feed_pt1 = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 23.63, 23.63, 23.63, 0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 23.63, 23.63, 23.63]  # ton CO2/ton H2
+CO2Feed_pt2 = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 10.50, 10.50, 10.50, 0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 10.50, 10.50, 10.50]  # ton CO2/ton H2
+CO2Feed_pt3 = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 5.25, 5.25, 5.25, 0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 5.25, 5.25, 5.25]  # ton CO2/ton H2
+CO2Feed_pt4 = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0.53, 0.53, 0.53, 0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0.53, 0.53, 0.53]  # ton CO2/ton H2
 if multipleSizes and includeCCS:
     # Multiple sizes + CCS (24 elem)
-    CO2Feed_p = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0, 0, 0, 0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0, 0, 0]  # ton CO2/ton H2
+    if newEmissionData:
+        if solveTimePeriod == 1:
+            CO2Feed_p = CO2Feed_pt1
+        if solveTimePeriod == 2:
+            CO2Feed_p = CO2Feed_pt2
+        if solveTimePeriod == 3:
+            CO2Feed_p = CO2Feed_pt3
+        if solveTimePeriod == 4:
+            CO2Feed_p = CO2Feed_pt4
+    else:
+        CO2Feed_p = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0, 0, 0, 0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0, 0, 0]  # ton CO2/ton H2
 elif multipleSizes:
     # Multiple sizes, no CCS (12 elem)
     CO2Feed_p = [0.58, 0.58, 0.58, 1.31, 1.31, 1.31, 0.21, 0.21, 0.21, 0, 0, 0]  # ton CO2/ton H2
@@ -151,6 +186,13 @@ elif includeCCS:
 else:
     # 1 size, no CCS
     CO2Feed_p = [0.58, 1.31, 0.21, 0]  # ton CO2/ton H2
+
+CO2Feed_pt = np.zeros(shape=(len(P), len(T)))
+CO2Feed_pt[:, 0] = CO2Feed_pt1
+CO2Feed_pt[:, 1] = CO2Feed_pt2
+CO2Feed_pt[:, 2] = CO2Feed_pt3
+CO2Feed_pt[:, 3] = CO2Feed_pt4
+
 
 CO2Trans = 0.00075  # ton CO2/km driven (750 g/km = 0.75 kg/km = 0.00075 ton/km)
 
@@ -427,14 +469,22 @@ alpha = 365
 """ Data resulting from other data """
 
 CIStart_pi = np.zeros(shape=(len(P), len(I)))  # ton CO2/ton H2
-if includeCCS:
-    for p in P:
-        for i in I:
-            CIStart_pi[(p, i)] = CO2Feed_p[p] + (1 - A_CCS_p[p]) * CO2Prod_pi[(p, i)] + A_CCS_p[p] * (1 - CCSEF) * CO2Prod_pi[(p, i)]
+CIStart_pit = np.zeros(shape=(len(P), len(I), len(T)))  # ton CO2/ton H2
+if not newEmissionData:
+    if includeCCS:
+        for p in P:
+            for i in I:
+                CIStart_pi[(p, i)] = CO2Feed_p[p] + (1 - A_CCS_p[p]) * CO2Prod_pi[(p, i)] + A_CCS_p[p] * (1 - CCSEF) * CO2Prod_pi[(p, i)]
+    else:
+        for p in P:
+            for i in I:
+                CIStart_pi[(p, i)] = CO2Feed_p[p] + CO2Prod_pi[(p, i)]
 else:
     for p in P:
         for i in I:
             CIStart_pi[(p, i)] = CO2Feed_p[p] + CO2Prod_pi[(p, i)]
+            for t in T:
+                CIStart_pit[(p, i, t)] = CO2Feed_pt[(p, t)] + CO2Prod_pi[(p, i)]
 
 """ Print parameters used """
 
@@ -513,10 +563,15 @@ if printData:
     print()
     print("CO2Feed_p: \n", pd.DataFrame(CO2Feed_p, index=PSet, columns=["CO2 feedstock"]).to_string())
     print()
+    print("CO2Feed_pt: \n", pd.DataFrame(CO2Feed_pt, index=PSet, columns=TSet).to_string())
+    print()
     print("CO2Trans: ", CO2Trans)
     print()
     print("CIStart_pi: \n", pd.DataFrame(CIStart_pi, index=PSet, columns=ISet).to_string())
     print()
+    for t in T:
+        print("CIStart_pi", t, ": \n", pd.DataFrame(CIStart_pit[:, :, t], index=PSet, columns=ISet).to_string())
+        print()
 
     print("Other data: ")
     print("CCF: ", CCF)

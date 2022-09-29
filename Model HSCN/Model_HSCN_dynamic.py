@@ -23,7 +23,7 @@ import math
 from itertools import product
 
 # Import the data and the parameters
-from Data_case import *
+from Data_HSCN import *
 
 ############################## Set up model & decision variables ######################################################
 
@@ -61,15 +61,15 @@ GC_t = Model.addMVar(shape=(len(T)), lb=0.0)
 LC_t = Model.addMVar(shape=(len(T)),lb=0.0)
 MC_t = Model.addMVar(shape=(len(T)), lb=0.0)
 TCC_t = Model.addMVar(shape=(len(T)), lb=0.0)
-TCE_t = Model.addMVar(shape=(len(T)), lb=0.0)
+TCE_t = Model.addMVar(shape=(len(T)), lb=-10e6)
 TCEFeed_t = Model.addMVar(shape=(len(T)), lb=0.0)
-TCEProd_t = Model.addMVar(shape=(len(T)), lb=0.0)
+TCEProd_t = Model.addMVar(shape=(len(T)), lb=-10e6)
 TCETrans_t = Model.addMVar(shape=(len(T)), lb=0.0)
 TDC_t = Model.addMVar(shape=(len(T)), lb=0.0)
 TOC_t = Model.addMVar(shape=(len(T)), lb=0.0)
 
 TDC = Model.addVar(lb=0.0)
-TCE = Model.addVar(lb=0.0)
+TCE = Model.addVar(lb=-10e6)
 
 # Number of trips daily (not rounded)
 NOT_ilggt = Model.addMVar(shape=(len(I), len(L), len(G), len(G), len(T)))
@@ -104,19 +104,19 @@ Z_igt = Model.addMVar(shape=(len(I), len(G), len(T)), vtype=GRB.BINARY)
 
 if optimizeCI:
     # Intensity of product i produced at grid g
-    CIPlants_igt = Model.addMVar(shape=(len(I), len(G), len(T)))
+    CIPlants_igt = Model.addMVar(shape=(len(I), len(G), len(T)), lb=-10e6)
 
     # Intensity of product i satisfied at grid g from production
-    CIProd_igt = Model.addMVar(shape=(len(I), len(G), len(T)))
+    CIProd_igt = Model.addMVar(shape=(len(I), len(G), len(T)), lb=-10e6)
 
     # Intensity of product i satisfied at grid g from transport
-    CITrans_igt = Model.addMVar(shape=(len(I), len(G), len(T)))
+    CITrans_igt = Model.addMVar(shape=(len(I), len(G), len(T)), lb=-10e6)
 
     # Total intensity of product i at grid g (ton CO2/ton H2)
-    CI_igt = Model.addMVar(shape=(len(I), len(G), len(T)))
+    CI_igt = Model.addMVar(shape=(len(I), len(G), len(T)), lb=-10e6)
 
     # Total intensity at grid g (ton CO2/ton H2)
-    CI_gt = Model.addMVar(shape=(len(G), len(T)))
+    CI_gt = Model.addMVar(shape=(len(G), len(T)), lb=-10e6)
 
 ############################## Model objective & constraints ##########################################################
 
@@ -311,20 +311,23 @@ Model.addConstr(TDC == gp.quicksum((CCF_t[t] / sum(CCF_t)) * TDC_t[t] for t in T
 ## Alternative minimizing total costs over all the days
 # Model.addConstr(TDC == gp.quicksum(TDC_t[t] * (alpha*CCF_t[t]) for t in T))
 
-# (B.88) Minimize TDC_t or TCE_t, or both
-objective = costImportance * TDC + CO2Importance * TCE
-
 """ CO2 part """
 
 # (B.89) Total feed emissions per time period
-Model.addConstrs(TCEFeed_t[t] == gp.quicksum(CO2Feed_p[p] * (gp.quicksum(P_pigt[(p, i, g, t)] for g in G for i in I)) for p in P) for t in T)
+if newEmissionData:
+    Model.addConstrs(TCEFeed_t[t] == gp.quicksum(CO2Feed_pt[(p, t)] * (gp.quicksum(P_pigt[(p, i, g, t)] for g in G for i in I)) for p in P) for t in T)
+else:
+    Model.addConstrs(TCEFeed_t[t] == gp.quicksum(CO2Feed_p[p] * (gp.quicksum(P_pigt[(p, i, g, t)] for g in G for i in I)) for p in P) for t in T)
 
 # (B.90) Total production emissions per time period
-if includeCCS:
-    Model.addConstrs(TCEProd_t[t] == gp.quicksum(((1 - A_CCS_p[p]) * CO2Prod_pi[(p, i)] + A_CCS_p[p] * (1 - CCSEF) * CO2Prod_pi[(p, i)]) * P_pigt[(p, i, g, t)] for p in P for i in I for g in G)
-                     for t in T)
-else:
+if newEmissionData:
     Model.addConstrs(TCEProd_t[t] == gp.quicksum(CO2Prod_pi[(p, i)] * (gp.quicksum(P_pigt[(p, i, g, t)] for g in G)) for p in P for i in I) for t in T)
+else:
+    if includeCCS:
+        Model.addConstrs(TCEProd_t[t] == gp.quicksum(((1 - A_CCS_p[p]) * CO2Prod_pi[(p, i)] + A_CCS_p[p] * (1 - CCSEF) * CO2Prod_pi[(p, i)]) * P_pigt[(p, i, g, t)] for p in P for i in I for g in G)
+                         for t in T)
+    else:
+        Model.addConstrs(TCEProd_t[t] == gp.quicksum(CO2Prod_pi[(p, i)] * (gp.quicksum(P_pigt[(p, i, g, t)] for g in G)) for p in P for i in I) for t in T)
 
 # (B.91) Total transportation emissions per time period
 Model.addConstrs(TCETrans_t[t] == CO2Trans * gp.quicksum(NOT_ilggt[(i, l, g, g_prime, t)] * 2 * L_lgg[(l, g, g_prime)] for i in I for l in L for g in G for g_prime in G) for t in T)
@@ -353,7 +356,7 @@ if optimizeCI:
     pass  # already in data
 
     # (B.105) CI^{Plants}_{igt}
-    Model.addConstrs(CIPlants_igt[(i, g, t)] * PT_igt[(i, g, t)] == gp.quicksum(P_pigt[(p, i, g, t)] * CIStart_pi[(p, i)] for p in P) for i in I for g in G for t in T)
+    Model.addConstrs(CIPlants_igt[(i, g, t)] * PT_igt[(i, g, t)] == gp.quicksum(P_pigt[(p, i, g, t)] * CIStart_pit[(p, i, t)] for p in P) for i in I for g in G for t in T)
 
     # (B.106) CI^{Prod}_{igt}
     Model.addConstrs(CIProd_igt[(i, g, t)] * gp.quicksum(Q_ilggt[(i, l_star, g_prime_star, g, t)] for l_star in L for g_prime_star in G)
@@ -369,55 +372,63 @@ if optimizeCI:
     # (B.109) CI_{gt}
     Model.addConstrs(CI_gt[(g, t)] == gp.quicksum(CI_igt[(i, g, t)] * (DL_igt[(i, g, t)] + DI_igt[(i, g, t)]) * (1 / DT_gt[(g, t)]) for i in I) for g in G for t in T if DT_gt[(g, t)] > 0)
 
+    if not useStartSolution:
+        # (B.110) CI_{ig} restrictions
+        for i in I:
+            for g in G:
+                for t in T:
+                    if maxCIDynamic[(i, g, t)] != -1:
+                        Model.addConstr(CI_igt[(i, g, t)] <= maxCIDynamic[(i, g, t)])
+
+        # (B.111) CI_{g} restrictions
+        for g in G:
+            for t in T:
+                if maxCIDynamic[(len(I), g, t)] != -1:
+                    Model.addConstr(CI_gt[(g, t)] <= maxCIDynamic[(len(I), g, t)])
+
+
+# (B.88) Minimize TDC or TCE, or both
+if not useStartSolution:
+    # No starting solution: just minimize what you want
+    objective = costImportance * TDC + CO2Importance * TCE
+else:
+    # Use starting solution: minimize the chain emissions first
+    objective = TCE + 0
+
+############################## Execute ########################################################################
+
+if useStartSolution:
+    """ First run: Execute minimizing the chain emissions."""
+    start_time = time.time()
+    Model.setObjective(objective, GRB.MINIMIZE)
+    Model.optimize()
+    end_time = time.time()
+    total_time = end_time - start_time
+    print()
+    print("=== FIRST RUN: ===")
+    print("Objective emission minimization:", objective.getValue(), "(total time ", round(total_time, 1), " s)")
+    print("==================")
+    print()
+
+    """ Second run: Execute minimizing the costs again + restriction(s) on CI."""
+    objective = TDC + 0
     # (B.110) CI_{ig} restrictions
     for i in I:
         for g in G:
             for t in T:
                 if maxCIDynamic[(i, g, t)] != -1:
                     Model.addConstr(CI_igt[(i, g, t)] <= maxCIDynamic[(i, g, t)])
-
     # (B.111) CI_{g} restrictions
     for g in G:
         for t in T:
             if maxCIDynamic[(len(I), g, t)] != -1:
                 Model.addConstr(CI_gt[(g, t)] <= maxCIDynamic[(len(I), g, t)])
 
-############################## Execute ########################################################################
-
-# (B.88) Minimize TDC_t or TCE_t, or both
-# objective = TCE + 0
-
-""" Execute the model as specified in Params. """
 start_time = time.time()
 Model.setObjective(objective, GRB.MINIMIZE)
 Model.optimize()
 end_time = time.time()
 total_time = end_time - start_time
-
-# print()
-# print("Objective emission minimization:", objective.getValue())
-# print()
-#
-# # (B.110) CI_{ig} restrictions
-# for i in I:
-#     for g in G:
-#         for t in T:
-#             if maxCIDynamic[(i, g, t)] != -1:
-#                 Model.addConstr(CI_igt[(i, g, t)] <= maxCIDynamic[(i, g, t)])
-#
-# # (B.111) CI_{g} restrictions
-# for g in G:
-#     for t in T:
-#         if maxCIDynamic[(len(I), g, t)] != -1:
-#             Model.addConstr(CI_gt[(g, t)] <= maxCIDynamic[(len(I), g, t)])
-#
-# objective = TDC + 0
-#
-# start_time = time.time()
-# Model.setObjective(objective, GRB.MINIMIZE)
-# Model.optimize()
-# end_time = time.time()
-# total_time = end_time - start_time
 
 ####################### Calculate Carbon intensities POST-optimization ##########################################
 
@@ -440,7 +451,7 @@ for i in I:
     for g in G:
         for t in T:
             if PT_igt[(i, g, t)].X > 0.0000001:
-                CIPlants_igt_post[(i, g, t)] = gp.quicksum(P_pigt[(p, i, g, t)] / PT_igt[(i, g, t)].X * CIStart_pi[(p, i)] for p in P).getValue()
+                CIPlants_igt_post[(i, g, t)] = gp.quicksum(P_pigt[(p, i, g, t)] / PT_igt[(i, g, t)].X * CIStart_pit[(p, i, t)] for p in P).getValue()
 
 # (B.98) Carbon intensities from production units for product i at customer location g
 CIProd_igt_post = np.zeros(shape=(len(I), len(G), len(T)))
@@ -676,8 +687,8 @@ for t in T:
     print(f"======================================")
     print(f"======= TIME PERIOD: {TSet[t]} ==============")
     print(f"======================================")
-    FCC_t_daily = (FCC_t[t].X / (alpha * CCF))
-    TCC_t_daily = (TCC_t[t].X / (alpha * CCF))
+    FCC_t_daily = (FCC_t[t].X / (alpha * CCF_t[t]))
+    TCC_t_daily = (TCC_t[t].X / (alpha * CCF_t[t]))
     print("=== COST VARIABLES ===")
     print(f"TDC_t (Total Daily Cost)            =  {round(TDC_t[t].X, 2)}  $/day")
     print(f" * FSC_t (FeedStock Cost)           =  {round(FSC_t[t].X, 2)}  $/day ({round(100 * (FSC_t[t].X / TDC_t[t].X), 1)}%)")

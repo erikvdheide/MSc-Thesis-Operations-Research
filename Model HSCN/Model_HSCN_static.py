@@ -23,7 +23,7 @@ import math
 from itertools import product
 
 # Import the data and the parameters
-from Data_case import *
+from Data_HSCN import *
 
 ############################## Set up model & decision variables ######################################################
 
@@ -61,9 +61,9 @@ GC = Model.addVar(lb=0.0)
 LC = Model.addVar(lb=0.0)
 MC = Model.addVar(lb=0.0)
 TCC = Model.addVar(lb=0.0)
-TCE = Model.addVar(lb=0.0)
+TCE = Model.addVar(lb=-10e6)
 TCEFeed = Model.addVar(lb=0.0)
-TCEProd = Model.addVar(lb=0.0)
+TCEProd = Model.addVar(lb=-10e6)
 TCETrans = Model.addVar(lb=0.0)
 TDC = Model.addVar(lb=0.0)
 TOC = Model.addVar(lb=0.0)
@@ -92,19 +92,19 @@ Z_ig = Model.addMVar(shape=(len(I), len(G)), vtype=GRB.BINARY)
 
 if optimizeCI:
     # Intensity of product i produced at grid g
-    CIPlants_ig = Model.addMVar(shape=(len(I), len(G)))
+    CIPlants_ig = Model.addMVar(shape=(len(I), len(G)), lb=-10e6)
 
     # Intensity of product i satisfied at grid g from production
-    CIProd_ig = Model.addMVar(shape=(len(I), len(G)))
+    CIProd_ig = Model.addMVar(shape=(len(I), len(G)), lb=-10e6)
 
     # Intensity of product i satisfied at grid g from transport
-    CITrans_ig = Model.addMVar(shape=(len(I), len(G)))
+    CITrans_ig = Model.addMVar(shape=(len(I), len(G)), lb=-10e6)
 
     # Total intensity of product i at grid g (ton CO2/ton H2)
-    CI_ig = Model.addMVar(shape=(len(I), len(G)))
+    CI_ig = Model.addMVar(shape=(len(I), len(G)), lb=-10e6)
 
     # Total intensity at grid g (ton CO2/ton H2)
-    CI_g = Model.addMVar(shape=(len(G)))
+    CI_g = Model.addMVar(shape=(len(G)), lb=-10e6)
 
 ############################## Model objective & constraints ##########################################################
 
@@ -292,16 +292,19 @@ objective = costImportance * TDC + CO2Importance * TCE
 Model.addConstr(TCEFeed == gp.quicksum(CO2Feed_p[p] * (gp.quicksum(P_pig[(p, i, g)] for g in G for i in I)) for p in P))
 
 # (B.30) Total production emissions
-if includeCCS:
-    Model.addConstr(TCEProd == gp.quicksum(((1 - A_CCS_p[p]) * CO2Prod_pi[(p, i)] + A_CCS_p[p] * (1 - CCSEF) * CO2Prod_pi[(p, i)]) * P_pig[(p, i, g)] for p in P for i in I for g in G))
-else:
+if newEmissionData:
     Model.addConstr(TCEProd == gp.quicksum(CO2Prod_pi[(p, i)] * (gp.quicksum(P_pig[(p, i, g)] for g in G)) for p in P for i in I))
+else:
+    if includeCCS:
+        Model.addConstr(TCEProd == gp.quicksum(((1 - A_CCS_p[p]) * CO2Prod_pi[(p, i)] + A_CCS_p[p] * (1 - CCSEF) * CO2Prod_pi[(p, i)]) * P_pig[(p, i, g)] for p in P for i in I for g in G))
+    else:
+        Model.addConstr(TCEProd == gp.quicksum(CO2Prod_pi[(p, i)] * (gp.quicksum(P_pig[(p, i, g)] for g in G)) for p in P for i in I))
 
 # (B.31) Total transportation emissions
-Model.addConstr(TCETrans == CO2Trans * gp.quicksum(NOT_ilgg[(i, l, g, g_prime)] * 2 * L_lgg[(l, g, g_prime)] for i in I for l in L for g in G for g_prime in G))
+if underEstimateNTU:
+    Model.addConstr(TCETrans == CO2Trans * gp.quicksum(NOT_ilgg[(i, l, g, g_prime)] * 2 * L_lgg[(l, g, g_prime)] for i in I for l in L for g in G for g_prime in G))
 if overEstimateNTU:
     Model.addConstr(TCETrans == CO2Trans * gp.quicksum(NTU_ilgg[(i, l, g, g_prime)] * 2 * L_lgg[(l, g, g_prime)] for i in I for l in L for g in G for g_prime in G))
-
 # Model.addConstr(TCETrans == gp.quicksum(CO2Trans * (gp.quicksum(NTU_ilgg[(i, l, g, g_prime)] * 2 * L_lgg[(l, g, g_prime)] for i in I for l in L)) for g in G for g_prime in G))
 
 # (B.32) Total chain emissions
@@ -553,23 +556,23 @@ print()
 FCC_daily = (FCC.X / (alpha * CCF))
 TCC_daily = (TCC.X / (alpha * CCF))
 print("=== COST VARIABLES ===")
-print(f"TDC (Total Daily Cost)            =  {round(TDC.X, 2)}  $/day")
-print(f" * FSC (FeedStock Cost)           =  {round(FSC.X, 2)}  $/day ({round(100 * (FSC.X / TDC.X), 1)}%)")
-print(f" * FCC (Facility Capital Cost)    =  {round(FCC_daily, 2)}  $/day ({round(100 * (FCC_daily / TDC.X), 1)}%)  ({round(FCC.X, 2)} $ in total)")
-print(f" * FOC (Facility Operating Cost)  =  {round(FOC.X, 2)}  $/day ({round(100 * (FOC.X / TDC.X), 1)}%)")
-print(f" * TCC (Transport Capital Cost)   =  {round(TCC_daily, 2)}  $/day ({round(100 * (TCC_daily / TDC.X), 1)}%)  ({round(TCC.X, 2)} $ in total)")
-print(f" * TOC (Transport Operating Cost) =  {round(TOC.X, 2)}  $/day ({round(100 * (TOC.X / TDC.X), 1)}%)")
-print(f"    - FC (Fueling Cost)           =  {round(FC.X, 2)}  $/day ({round(100 * (FC.X / TOC.X), 1)}% of TOC), ({round(100 * (FC.X / TDC.X), 1)}% of total)")
-print(f"    - LC (Labour Cost)            =  {round(LC.X, 2)}  $/day ({round(100 * (LC.X / TOC.X), 1)}% of TOC), ({round(100 * (LC.X / TDC.X), 1)}% of total)")
-print(f"    - MC (Maintenance Cost)       =  {round(MC.X, 2)}  $/day ({round(100 * (MC.X / TOC.X), 1)}% of TOC), ({round(100 * (MC.X / TDC.X), 1)}% of total)")
-print(f"    - GC (General Cost)           =  {round(GC.X, 2)}  $/day ({round(100 * (GC.X / TOC.X), 1)}% of TOC), ({round(100 * (GC.X / TDC.X), 1)}% of total)")
+print(f"TDC (Total Daily Cost)            =  {round(TDC.X, 2)} ")
+print(f" * FSC (FeedStock Cost)           =  {round(FSC.X, 2)} ({round(100 * (FSC.X / TDC.X), 1)}\%)")
+print(f" * FCC (Facility Capital Cost)    =  {round(FCC_daily, 2)} ({round(100 * (FCC_daily / TDC.X), 1)}\%)  ({round(FCC.X, 2)} $ in total)")
+print(f" * FOC (Facility Operating Cost)  =  {round(FOC.X, 2)} ({round(100 * (FOC.X / TDC.X), 1)}\%)")
+print(f" * TCC (Transport Capital Cost)   =  {round(TCC_daily, 2)} ({round(100 * (TCC_daily / TDC.X), 1)}\%)  ({round(TCC.X, 2)} $ in total)")
+print(f" * TOC (Transport Operating Cost) =  {round(TOC.X, 2)} ({round(100 * (TOC.X / TDC.X), 1)}\%)")
+print(f"    - FC (Fueling Cost)           =  {round(FC.X, 2)} ({round(100 * (FC.X / TOC.X), 1)}\%), ({round(100 * (FC.X / TDC.X), 1)}% of total)")
+print(f"    - LC (Labour Cost)            =  {round(LC.X, 2)} ({round(100 * (LC.X / TOC.X), 1)}\%), ({round(100 * (LC.X / TDC.X), 1)}% of total)")
+print(f"    - MC (Maintenance Cost)       =  {round(MC.X, 2)} ({round(100 * (MC.X / TOC.X), 1)}\%), ({round(100 * (MC.X / TDC.X), 1)}% of total)")
+print(f"    - GC (General Cost)           =  {round(GC.X, 2)} ({round(100 * (GC.X / TOC.X), 1)}\%), ({round(100 * (GC.X / TDC.X), 1)}% of total)")
 print()
 
 print("=== CARBON VARIABLES ===")
-print(f"TCE (Total Carbon Emission)  =  {round(TCE.X, 2)} ton CO2/day")
-print(f"  * TCEFeed (Feedstock Em.)  =  {round(TCEFeed.X, 1)}  ton CO2/day ({round(100 * (TCEFeed.X / TCE.X), 1)}%)")
-print(f"  * TCEProd (Production Em.) =  {round(TCEProd.X, 2)}  ton CO2/day ({round(100 * (TCEProd.X / TCE.X), 1)}%)")
-print(f"  * TCETrans (Transport Em.) =  {round(TCETrans.X, 2)} ton CO2/day ({round(100 * (TCETrans.X / TCE.X), 1)}%)")
+print(f"TCE (Total Carbon Emission)  =  {round(TCE.X, 2)}")
+print(f"  * TCEFeed (Feedstock Em.)  =  {round(TCEFeed.X, 1)} ({round(100 * (TCEFeed.X / TCE.X), 1)}\%)")
+print(f"  * TCEProd (Production Em.) =  {round(TCEProd.X, 2)} ({round(100 * (TCEProd.X / TCE.X), 1)}\%)")
+print(f"  * TCETrans (Transport Em.) =  {round(TCETrans.X, 2)} ({round(100 * (TCETrans.X / TCE.X), 1)}\%)")
 print()
 print("POST-optimization Carbon intensities and total carbon emissions per grid: ")
 CI_and_Carbon = np.zeros(shape=(len(G), 6))
