@@ -12,16 +12,16 @@ import gurobipy as gp
 """ Nodes """
 
 sources, cost_source, min_supply_source, max_supply_source, CO2_source = gp.multidict({
-    "S1": [10, 10, 100, 5],
-    "S2": [15, 10, 120, 4],
-    "S3": [1, 10, 1000, 100]
+    "S1": [10, 0, 100, 5],
+    "S2": [15, 0, 120, 4],
+    "S3": [1, 0, 1000, 100]
 })
 
 pools, cost_pool, min_supply_pool, max_supply_pool, CO2_pool = gp.multidict({
-    "P1": [5, 10, -1, 1],
-    "P2": [1, 10, -1, 20],
-    "P3": [2, 10, -1, 1],
-    "P4": [1, 10, -1, 2]
+    "P1": [5, 0, -1, 1],
+    "P2": [1, 0, -1, 20],
+    "P3": [2, 0, -1, 1],
+    "P4": [1, 0, -1, 2]
 })
 
 targets, price_target, min_demand_target, max_demand_target, CO2_target, max_CI_target = gp.multidict({
