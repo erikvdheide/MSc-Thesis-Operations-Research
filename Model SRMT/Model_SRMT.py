@@ -22,7 +22,7 @@ The model can do the following:
 ############################## Decisions #############################################################################
 
 usedData = 5  # Data 1, 2, 3, 4 of 5
-timeLimit = 60  # Time limit in seconds
+timeLimit = 100  # Time limit in seconds
 printStatus = True  # Print optimization status updates
 minimizeOnlyCI = False  # Minimize all CIs for positive profit
 profitImportance = 1.0  # Profit importance in weighted objective
@@ -30,14 +30,14 @@ correctCCSPost = True  # Correct CI post-optimization if not capacity captured f
 balanceConstraintsWay1 = False  # Way 1 considers inflow and outflow, Way 2 only uses inflow + CI_d directly
 atMostOneMode = False  # True to add the option that only 1 mode of transport can be used between A and B
 
-optimizeOption1 = False  # Optimize using balance constraints
-optimizeOption2 = True  # Optimize using carbon flows
+optimizeOption1 = True  # Optimize using balance constraints
+optimizeOption2 = False  # Optimize using carbon flows
 
 postCalcOption1 = True  # Post-calc using CI vars
 postCalcOption2 = False  # Post-calc using flow vars
 
 # Restrictions on CIs:
-maxCI_T1 = 100
+maxCI_T1 = -1
 maxCI_T2 = -1
 maxCI_T3 = -1
 
@@ -161,6 +161,15 @@ if includedCCS:
     I_pl = Model.addVars(pools_CCS, vtype=GRB.BINARY, name="Binary variable if CO2 is captured using that level of investment")
 
 ############################## Model objective & constraints ##########################################################
+
+""" TEST: Fix if you fix CI variables (did not work!) """
+# Model.addConstr(y['P1'] == 7.000000099067903 * 4.786)
+# Model.addConstr(y['P2'] == 122.99999965945723 * 265.214)
+# Model.addConstr(y['P3'] == 9.000000099034116 * 4.786)
+# Model.addConstr(y['P4'] == 125.99999965927057 * 265.214)
+# Model.addConstr(y['T1'] == 119.9999996799399 * 120.0)
+# Model.addConstr(y['T2'] == 126.99999965884611 * 127.0)
+# Model.addConstr(y['T3'] == 126.9999996588786 * 127.0)
 
 """ Objective function """
 
@@ -506,3 +515,9 @@ if postCalcOption2:
         CI_per_unit = G.nodes[t]['y_post'].getValue() / G.nodes[t]['x_post']
         print(f"POST-optimization Carbon intensity at target {t}: {round(CI_per_unit,3)}")
     print()
+
+# Print CIs
+# for n in nodes:
+#     if x[n].X > 0.0001:
+#         print("node: ", n, " with CI: ", (y[n].X/x[n].X))
+
