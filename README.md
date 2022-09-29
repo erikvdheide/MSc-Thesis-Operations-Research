@@ -9,7 +9,7 @@ The code is split into 3 parts. The first part considers the single-resource, mu
 
 ## Single-resource, multi-transport model (```Model SRMT```)
 The model which considers only one resource (product) is split into 5 separate example setups. This model considers *pools*: all materials that come into an intermediate pool are linearly blended. This model was a build-up towards the multi-resource model, no results were stated in the report. It containts of the following files:
-* ```Model_SRMT.py```. Serves at the **main** for this model. Containts the model which can run all 5 data setups. Also contains options to run the model. 
+* ```Model_SRMT.py```. Serves at the **main** for this model. Containts the model formulations. In the top region of the page, you can fill in some parameters, including which of the 5 datasets you want to run. Run this file to execute the model. 
 * ```Data_SRMT_1.py```. Consists of 3 source nodes, 1 pool and 3 target nodes.
 * ```Data_SRMT_2.py```. Consists of 3 sources, 2 pools (in 1 layer) and 3 target nodes.
 * ```Data_SRMT_3.py```. Consists of 3 sources, 4 pools (in 2 layers) and 3 target nodes.
